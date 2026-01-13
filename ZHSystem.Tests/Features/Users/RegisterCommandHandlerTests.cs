@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using Xunit;
 using ZHSystem.Application.Common.Exceptions;
 using ZHSystem.Application.Common.Interfaces;
 using ZHSystem.Application.DTOs.Auth;
@@ -11,7 +12,7 @@ using ZHSystem.Application.Features.Auth.Commands;
 using ZHSystem.Application.UnitTests.Common;
 using ZHSystem.Domain.Entities;
 using ZHSystem.Infrastructure.Persistence;
-using Xunit;
+using ZHSystem.Test.Common;
 
 public class RegisterCommandHandlerTests
 {
@@ -26,20 +27,12 @@ public class RegisterCommandHandlerTests
         _mapper = AutoMapperTestFactory.CreateMapper();
     }
 
-    private ApplicationDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
-        return new ApplicationDbContext(options);
-    }
-
+   
     [Fact]
     public async Task Register_Should_Create_User_And_Send_Verification_Email()
     {
         // Arrange
-        var db = CreateDbContext();
+        var db = ApplictionDbContextTestFactory.CreateDbContext(); 
 
 
         _passwordHasherMock
@@ -94,7 +87,7 @@ public class RegisterCommandHandlerTests
     public async Task Register_Should_Throw_When_Email_Already_Exists()
     {
         // Arrange
-        var db = CreateDbContext();
+        var db = ApplictionDbContextTestFactory.CreateDbContext();
         var existingUser = new User
         {
             Email = "existing@test.com",
@@ -127,7 +120,7 @@ public class RegisterCommandHandlerTests
     public async Task Register_Should_Handle_EmailService_Exception_Gracefully()
     {
         // Arrange
-        var db = CreateDbContext();
+        var db = ApplictionDbContextTestFactory.CreateDbContext();
         var handler = new RegisterCommandHandler(
             db,
             _passwordHasherMock.Object,

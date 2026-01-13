@@ -17,7 +17,7 @@ namespace ZHSystem.Application.UnitTests.Common
             configExpression.AddProfile<MappingProfile>();
 
             var loggerFactory = LoggerFactory.Create(builder => { });
-
+                
             var config = new MapperConfiguration(configExpression, loggerFactory);
 
             config.AssertConfigurationIsValid();

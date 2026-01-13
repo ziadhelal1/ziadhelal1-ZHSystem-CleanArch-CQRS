@@ -12,6 +12,7 @@ using ZHSystem.Application.Features.Auth.Commands;
 using ZHSystem.Application.UnitTests.Common;
 using ZHSystem.Domain.Entities;
 using ZHSystem.Infrastructure.Persistence;
+using ZHSystem.Test.Common;
 
 public class LoginCommandHandlerTests
 {
@@ -28,20 +29,12 @@ public class LoginCommandHandlerTests
         });
     }
 
-    private ApplicationDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
-        return new ApplicationDbContext(options);
-    }
 
     [Fact]
     public async Task Login_Should_Return_Tokens_When_Credentials_Are_Valid()
     {
         // Arrange
-        var db = CreateDbContext();
+        var db = ApplictionDbContextTestFactory.CreateDbContext(); 
 
         var user = new User
         {
@@ -98,7 +91,7 @@ public class LoginCommandHandlerTests
     public async Task Login_Should_Throw_When_Password_Is_Wrong()
     {
         // Arrange
-        var db = CreateDbContext();
+        var db = ApplictionDbContextTestFactory.CreateDbContext();
 
         var user = new User
         {
@@ -135,7 +128,7 @@ public class LoginCommandHandlerTests
     public async Task Login_Should_Throw_When_Email_Is_Not_Verified()
     {
         // Arrange
-        var db = CreateDbContext();
+        var db = ApplictionDbContextTestFactory.CreateDbContext();
 
         var user = new User
         {
