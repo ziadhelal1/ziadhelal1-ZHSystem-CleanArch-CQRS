@@ -25,19 +25,19 @@ namespace ZHSystem.Application.Common
         {
             var requestName = typeof(TRequest).Name;
             var timer = Stopwatch.StartNew();
-            // جلب معرف المستخدم إذا توفر
+        
             var userId = _currentUserService.UserId ?? "Anonymous";
 
             try
             {
-                // تسجيل بداية الطلب مع محتوياته (JSON) ومعرف المستخدم
+              
                 _logger.LogInformation("MediatR Request: {Name} | User: {UserId} {@Request}",
                     requestName, userId, request);
 
                 var response = await next();
 
                 timer.Stop();
-                // تسجيل النجاح مع الوقت
+               
                 _logger.LogInformation("MediatR Handled: {Name} | User: {UserId} | Duration: {Duration}ms",
                     requestName, userId, timer.ElapsedMilliseconds);
 
@@ -46,7 +46,7 @@ namespace ZHSystem.Application.Common
             catch (Exception ex)
             {
                 timer.Stop();
-                // تسجيل الفشل مع التفاصيل والوقت
+               
                 _logger.LogError(ex, "MediatR Failure: {Name} | User: {UserId} | Duration: {Duration}ms",
                     requestName, userId, timer.ElapsedMilliseconds);
                 throw;

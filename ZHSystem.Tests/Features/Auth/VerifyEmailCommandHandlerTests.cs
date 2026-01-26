@@ -11,7 +11,7 @@ using ZHSystem.Application.Features.Auth.Commands;
 using ZHSystem.Domain.Entities;
 using ZHSystem.Test.Common;
 
-namespace ZHSystem.Test.Features.Users
+namespace ZHSystem.Test.Features.Auth
 {
     public class VerifyEmailCommandHandlerTests
     {

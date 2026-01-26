@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ZHSystem.Application.Features.Students.Commands;
@@ -9,6 +10,7 @@ using ZHSystem.Application.Features.Students.Queries;
 
 namespace ZHSystem.Api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class StudentsController : ControllerBase

@@ -14,6 +14,10 @@ using ZHSystem.Domain.Entities;
 using ZHSystem.Infrastructure.Persistence;
 using ZHSystem.Test.Common;
 
+
+
+
+namespace ZHSystem.Test.Features.Auth;
 public class LoginCommandHandlerTests
 {
     private readonly Mock<IPasswordHasher<User>> _passwordHasherMock = new();

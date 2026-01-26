@@ -1,17 +1,19 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+using System.Text;
 using ZHSystem.Application.Common;
 using ZHSystem.Application.Common.Interfaces;
 using ZHSystem.Application.DTOs.Auth;
 using ZHSystem.Application.Features.Auth.Commands;
 using ZHSystem.Application.Features.Users.Commands;
 using ZHSystem.Domain.Entities;
-using System.Security.Cryptography;
-using System.Text;
+
 
 namespace ZHSystem.Api.Controllers
 {
@@ -57,18 +59,16 @@ namespace ZHSystem.Api.Controllers
                 new RefreshTokenCommand(request.RefreshToken));
             return Ok(result);
         }
-
+        [Authorize]
         [HttpPost("revoke")]
-        public async Task<IActionResult> Revoke([FromBody] string refreshToken)
+        public async Task<IActionResult> Revoke([FromBody] RefreshRequestDto dto)
         {
-            var stored = await _db.RefreshTokens.FirstOrDefaultAsync(r => r.Token == refreshToken);
-            if (stored is null) return NotFound();
+            await _mediator.Send(
+                new RevokeRefreshTokenCommand(dto.RefreshToken));
 
-            stored.IsRevoked = true;
-            await _db.SaveChangesAsync(CancellationToken.None);
             return NoContent();
         }
-
+        [Authorize]
 
         [HttpGet("verify-email")]
         public async Task<IActionResult> VerifyEmail([FromQuery] string token)
@@ -104,6 +104,20 @@ namespace ZHSystem.Api.Controllers
             );
 
             return Ok("If the email exists and is not verified, a verification email has been sent.");
+        }
+        [HttpPost("auth/google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto)
+        {
+            await _mediator.Send(new LogoutCommand(dto.RefreshToken));
+            return NoContent();
         }
     }
 }

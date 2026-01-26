@@ -3,19 +3,21 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using ZHSystem.Application.Common;
-using ZHSystem.Application.Common.Exceptions;
-using ZHSystem.Application.Common.Interfaces;
-using ZHSystem.Application.DTOs;
-using ZHSystem.Application.DTOs.Auth;
-using ZHSystem.Domain.Entities;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using ZHSystem.Application.Common;
+using ZHSystem.Application.Common.Exceptions;
+using ZHSystem.Application.Common.Interfaces;
+using ZHSystem.Application.DTOs;
+using ZHSystem.Application.DTOs.Auth;
+using ZHSystem.Domain.Entities;
+using static Google.Apis.Auth.OAuth2.Web.AuthorizationCodeWebApp;
+
 
 namespace ZHSystem.Application.Features.Auth.Commands
 {
@@ -24,23 +26,21 @@ namespace ZHSystem.Application.Features.Auth.Commands
     {
         private readonly IApplicationDbContext _db;
         private readonly IPasswordHasher<User> _passwordHasher;
-        private readonly ITokenService _tokenService;
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
-        private readonly IConfiguration _configuration;
-
+        private readonly ILogger<RegisterCommandHandler> _logger;
         public RegisterCommandHandler(
             IApplicationDbContext db,
             IPasswordHasher<User> passwordHasher,
-            ITokenService tokenService, IMapper mapper
-            ,IEmailService emailService, IConfiguration configuration)
+            IMapper mapper
+            ,IEmailService emailService ,ILogger<RegisterCommandHandler> logger)
         {
             _db = db;
             _passwordHasher = passwordHasher;
-            _tokenService = tokenService;
             _mapper = mapper;
             _emailService = emailService;
-            _configuration = configuration;
+            _logger = logger;
+
         }
         public async Task<RegisterResponseDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
@@ -65,38 +65,36 @@ namespace ZHSystem.Application.Features.Auth.Commands
                 );
 
             user.EmailVerificationExpires = DateTime.UtcNow.AddHours(24);
-            const int StudentRoleId = 2;
-            const string StudentRoleName = "User";
-
-            var userRole = new UserRole { User = user, RoleId = StudentRoleId };
+            const int UserRoleId = 2;
+            var userRole = new UserRole { User = user, RoleId = UserRoleId };
             await _db.Users.AddAsync(user, cancellationToken);
             await _db.UserRoles.AddAsync(userRole, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
 
+            //send verification email to user
+            try
+            {
+                await _emailService.SendVerificationEmailAsync(user.Email, user.UserName, rawToken);
+            }
+            catch (Exception ex)
+            {
+                
+                _logger.LogError(ex, "User registered but verification email failed to send for {Email}", user.Email);
 
-            var baseUrl = _configuration["ClientSettings:BaseUrl"];
-            var verifyUrl= $"{baseUrl}/auth/verify-email?token={rawToken}";
-            
-            var htmlBody = $@"
-                <h2>Welcome to ZHSystem System</h2>
-                <p>Please verify your email by clicking the link below:</p>
-                <a href='{baseUrl}'>Verify Email</a>
-                ";
+               
+                return new RegisterResponseDto
+                {
+                    
+                    Message = "Registration successful, but we couldn't send the verification email. Please try resending it from your profile."
+                };
+            }
 
-            await _emailService.SendAsync(
-                user.Email,
-                "Verify your email",
-                htmlBody
-            );
+            return new RegisterResponseDto {  Message = "Registration successful. Please check your email." };
+
+
+
 
            
-            return new RegisterResponseDto
-            {
-                Message = "Registration successful. Please verify your email."
-            };
-
-
-
         }
     }
 }

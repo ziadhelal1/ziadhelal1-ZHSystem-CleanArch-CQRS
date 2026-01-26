@@ -20,6 +20,8 @@ using System.Threading.RateLimiting;
 
 
 
+
+
 namespace ZHSystem.Api;
 
 public class Program
@@ -29,13 +31,15 @@ public class Program
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
             .CreateBootstrapLogger();
-       
+
 
         try
         {
- 
+
 
             var builder = WebApplication.CreateBuilder(args);
+
+
             builder.Services.AddRateLimiter(options =>
             {
                 options.GlobalLimiter =
@@ -75,7 +79,7 @@ public class Program
                 .Enrich.WithMachineName()
                 .Enrich.WithThreadId()
                 .WriteTo.Console()
-                .WriteTo.Seq("http://localhost:5341") 
+                .WriteTo.Seq("http://localhost:5341")
                 .WriteTo.File("Logs/audit-.log", rollingInterval: RollingInterval.Day));
 
             builder.Services.AddControllers();
@@ -85,14 +89,14 @@ public class Program
             builder.Services.AddFluentValidationClientsideAdapters();
 
             // Register all validators from Application assembly
-           // 
+            // 
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZHSystem API", Version = "v1" });
 
-                
+
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "Enter ONLY your JWT token", 

@@ -32,5 +32,5 @@ services:
       - Serilog__WriteTo__0__Args__serverUrl=http://seq:80
     ports:
       - "8080:8080"
-    # التعديل هنا: نطلب من دوكر إعادة تشغيل الـ API تلقائياً إذا فشل الاتصال بالقاعدة أول مرة
+    
     restart: on-failure

@@ -20,7 +20,7 @@ namespace ZHSystem.Application.Features.Auth.Commands
     {
         private readonly IApplicationDbContext _db;
         private readonly IEmailService _emailService;
-        private readonly IConfiguration _configuration;
+        
 
         public ResendVerificationEmailCommandHandler(
             IApplicationDbContext db,
@@ -28,7 +28,7 @@ namespace ZHSystem.Application.Features.Auth.Commands
         {
             _db = db;
             _emailService = emailService;
-            _configuration = configuration; 
+           
         }
 
         public async Task Handle(
@@ -66,21 +66,7 @@ namespace ZHSystem.Application.Features.Auth.Commands
             user.EmailVerificationExpires = DateTime.UtcNow.AddHours(24);
             user.LastSecurityEmailSentAt = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync(cancellationToken);
-            var baseUrl = _configuration["ClientSettings:BaseUrl"];
-            var verifyUrl = $"{baseUrl}/auth/verify-email?token={rawToken}";
-
-            var htmlBody = $@"
-                <h2>Email Verification</h2>
-                <p>Please verify your email by clicking the link below:</p>
-                <a href='{verifyUrl}'>Verify Email</a>
-                ";
-
-            await _emailService.SendAsync(
-                user.Email,
-                "Verify your email",
-                htmlBody
-            );
+            await _emailService.SendVerificationEmailAsync(user.Email, user.UserName, rawToken);
         }
     }
 }

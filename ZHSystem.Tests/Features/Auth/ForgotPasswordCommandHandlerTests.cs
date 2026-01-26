@@ -12,27 +12,22 @@ using ZHSystem.Application.Common.Interfaces;
 using ZHSystem.Application.Features.Auth.Commands;
 using ZHSystem.Domain.Entities;
 using ZHSystem.Infrastructure.Persistence;
+using ZHSystem.Test.Common;
 
-namespace ZHSystem.Test.Features.Users
+namespace ZHSystem.Test.Features.Auth
 {
     public  class ForgotPasswordCommandHandlerTests
     {
         private readonly Mock<IEmailService> _emailServiceMock = new();
         private readonly Mock<IConfiguration> _configurationMock = new();
 
-        private ApplicationDbContext CreateDbContext()
-        {
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-            return new ApplicationDbContext(options);
-        }
+        
 
         [Fact]
         public async Task ForgotPassword_Should_CreateToken_And_SendEmail_When_UserExists()
         {
             // Arrange
-            var db = CreateDbContext();
+            var db = ApplictionDbContextTestFactory.CreateDbContext();
             var user = new User
             {
                 Id = 1,
@@ -69,7 +64,7 @@ namespace ZHSystem.Test.Features.Users
         public async Task ForgotPassword_Should_Return_When_UserNotFound()
         {
             // Arrange
-            var db = CreateDbContext();
+            var db = ApplictionDbContextTestFactory.CreateDbContext();
             var handler = new ForgotPasswordCommandHandler(db, _emailServiceMock.Object, _configurationMock.Object);
 
             // Act
@@ -84,7 +79,7 @@ namespace ZHSystem.Test.Features.Users
         public async Task ForgotPassword_Should_Throw_RateLimitException_When_CalledTooSoon()
         {
             // Arrange
-            var db = CreateDbContext();
+            var db = ApplictionDbContextTestFactory.CreateDbContext();
             var user = new User
             {
                 Id = 1,
@@ -110,7 +105,7 @@ namespace ZHSystem.Test.Features.Users
         public async Task ForgotPassword_Should_Throw_When_EmailServiceFails()
         {
             // Arrange
-            var db = CreateDbContext();
+            var db = ApplictionDbContextTestFactory.CreateDbContext();
             var user = new User
             {
                 Id = 1,

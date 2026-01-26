@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using ZHSystem.Application.Common.Exceptions;
@@ -14,13 +15,15 @@ using ZHSystem.Domain.Entities;
 using ZHSystem.Infrastructure.Persistence;
 using ZHSystem.Test.Common;
 
+namespace ZHSystem.Test.Features.Auth;
 public class RegisterCommandHandlerTests
 {
     private readonly Mock<IPasswordHasher<User>> _passwordHasherMock = new();
-    private readonly Mock<ITokenService> _tokenServiceMock = new();
+    
     private readonly Mock<IEmailService> _emailServiceMock = new();
-    private readonly Mock<IConfiguration> _configurationMock = new();
-    private readonly IMapper _mapper;
+    private readonly Mock<ILogger<RegisterCommandHandler>> _loggerMock = new(); 
+
+    private readonly  IMapper _mapper;
 
     public RegisterCommandHandlerTests()
     {
@@ -44,10 +47,10 @@ public class RegisterCommandHandlerTests
         var handler = new RegisterCommandHandler(
             db,
             _passwordHasherMock.Object,
-            _tokenServiceMock.Object,
             _mapper,
             _emailServiceMock.Object,
-            _configurationMock.Object
+            _loggerMock.Object
+
         );
 
         var command = new RegisterCommand(new RegisterDto
@@ -77,9 +80,9 @@ public class RegisterCommandHandlerTests
             Times.Once);
 
         _emailServiceMock.Verify(
-            x => x.SendAsync(
+            x => x.SendVerificationEmailAsync(
                 "test@test.com",
-                It.IsAny<string>(),
+                "testuser",
                 It.IsAny<string>()),
             Times.Once);
     }
@@ -100,10 +103,10 @@ public class RegisterCommandHandlerTests
         var handler = new RegisterCommandHandler(
             db,
             _passwordHasherMock.Object,
-            _tokenServiceMock.Object,
             _mapper,
             _emailServiceMock.Object,
-            _configurationMock.Object
+            _loggerMock.Object
+
         );
 
         var command = new RegisterCommand(new RegisterDto
@@ -121,13 +124,24 @@ public class RegisterCommandHandlerTests
     {
         // Arrange
         var db = ApplictionDbContextTestFactory.CreateDbContext();
+
+        _emailServiceMock
+           .Setup(x => x.SendVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+           .ThrowsAsync(new Exception("SMTP error"));
+
+
+        _passwordHasherMock
+            .Setup(x => x.HashPassword(It.IsAny<User>(), It.IsAny<string>()))
+            .Returns("hashed-password");
+
+
         var handler = new RegisterCommandHandler(
             db,
             _passwordHasherMock.Object,
-            _tokenServiceMock.Object,
             _mapper,
-            _emailServiceMock.Object,
-            _configurationMock.Object
+            _emailServiceMock.Object
+            , _loggerMock.Object
+
         );
 
         var command = new RegisterCommand(new RegisterDto
@@ -137,23 +151,35 @@ public class RegisterCommandHandlerTests
             Password = "Password123!"
         });
 
-        _passwordHasherMock
-            .Setup(x => x.HashPassword(It.IsAny<User>(), It.IsAny<string>()))
-            .Returns("hashed-password");
+        
 
-        _emailServiceMock
-            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(new Exception("SMTP error"));
-
+        //Act
+        var result = await handler.Handle(command, CancellationToken.None);
         // Act
-        Func<Task> act = async () => await handler.Handle(command, default);
+        //Func<Task> act = async () => await handler.Handle(command, default);
 
         // Assert
-        await act.Should().ThrowAsync<Exception>()
-            .WithMessage("SMTP error"); // Optional: depends on how you want to handle email exceptions
+        result.Should().NotBeNull();
+        result.Message.Should().Contain("couldn't send the verification email");
+
+
+
+        //Verify that the user was still created despite the email failure
+        var userInDb = await db.Users.AnyAsync(u => u.Email == "test2@test.com");
+        userInDb.Should().BeTrue();
+
+        
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+            Times.Once);
     }
 
-   
-    
+
+
 
 }
